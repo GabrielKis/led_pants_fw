@@ -15,12 +15,16 @@
 #include <espressif/partitions_0x0_amp_4M.dtsi>
 #include "esp32s3_supermini-pinctrl.dtsi"
 
+#include <zephyr/dt-bindings/led/led.h>
+
+
 / {
 	model = "Espressif ESP32S3-DevkitC PROCPU";
 	compatible = "espressif,esp32s3";
 
 	aliases {
 		i2c-0 = &i2c0;
+		led-strip = &led_strip;
 		watchdog0 = &wdt0;
 	};
 
@@ -91,11 +95,11 @@
 	pinctrl-names = "default";
 };
 
-// &i2s0 {
-// 	pinctrl-0 = <&i2s0_default>;
-// 	pinctrl-names = "default";
-// 	status = "disabled";
-// };
+&i2s0 {
+	pinctrl-0 = <&i2s0_default>;
+	pinctrl-names = "default";
+	status = "disabled";
+};
 
 // &i2s1 {
 // 	pinctrl-0 = <&i2s1_default>;
@@ -138,6 +142,35 @@
 
 &timer3 {
 	status = "disabled";
+};
+
+&i2s0_default {
+	group1 {
+		pinmux = <I2S0_O_SD_GPIO38>;
+		output-enable;
+	};
+};
+
+i2s_led: &i2s0 {
+	status = "okay";
+
+	dmas = <&dma 3>;
+	dma-names = "tx";
+
+	led_strip: ws2812@0 {
+		compatible = "worldsemi,ws2812-i2s";
+
+		reg = <0>;
+		chain-length = <1>;
+		color-mapping = <LED_COLOR_ID_GREEN
+				 LED_COLOR_ID_RED
+				 LED_COLOR_ID_BLUE>;
+		reset-delay = <500>;
+	};
+};
+
+&dma {
+	status = "okay";
 };
 
 // &wdt0 {
