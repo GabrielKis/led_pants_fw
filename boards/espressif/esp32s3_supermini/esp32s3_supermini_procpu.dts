@@ -98,7 +98,7 @@
 &i2s0 {
 	pinctrl-0 = <&i2s0_default>;
 	pinctrl-names = "default";
-	status = "disabled";
+	status = "okay";
 };
 
 // &i2s1 {
@@ -146,7 +146,7 @@
 
 &i2s0_default {
 	group1 {
-		pinmux = <I2S0_O_SD_GPIO38>;
+		pinmux = <I2S0_O_SD_GPIO48>;
 		output-enable;
 	};
 };

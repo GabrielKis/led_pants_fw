@@ -63,27 +63,28 @@ int main(void)
 		return 0;
 	}
 
-	LOG_INF("Displaying pattern on strip");
+	LOG_INF("Displaying pattern on strip with %d pixels", STRIP_NUM_PIXELS);
 
     while (1) {
-        k_msleep(500);  // Delay to avoid CPU usage
-        printk("AIAIAIAI Bixin\n");
+        // Simple test - set all LEDs to the current color
+        for (size_t i = 0; i < STRIP_NUM_PIXELS; i++) {
+            pixels[i] = colors[color];
+        }
 
-		for (size_t cursor = 0; cursor < ARRAY_SIZE(pixels); cursor++) {
-			memset(&pixels, 0x00, sizeof(pixels));
-			memcpy(&pixels[cursor], &colors[color], sizeof(struct led_rgb));
+        rc = led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
+        if (rc) {
+            LOG_ERR("couldn't update strip: %d", rc);
+        } else {
+            LOG_INF("Updated all %d LEDs with color %zu: R=%02x G=%02x B=%02x",
+                    STRIP_NUM_PIXELS,
+                    color,
+                    colors[color].r,
+                    colors[color].g,
+                    colors[color].b);
+        }
 
-			rc = led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
-			if (rc) {
-				LOG_ERR("couldn't update strip: %d", rc);
-			}
-
-			k_sleep(DELAY_TIME);
-		}
-
-		color = (color + 1) % ARRAY_SIZE(colors);
-
-
+        k_sleep(K_MSEC(1000));  // Wait 1 second between color changes
+        color = (color + 1) % ARRAY_SIZE(colors);
     }
 
     return 0;
