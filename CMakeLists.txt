@@ -28,7 +28,7 @@ target_sources(app PRIVATE
                 # src/thread_msg/message_iot_main.c
                 # src/thread_msg/message_main_bubble.c
                 src/hmi/uart_cmd.c
-                # src/io_bubble/bubble_control.c
+                src/led_rgb/led_rgb_strip.c
                 # src/iot/iot_thread.c
                 # src/iot/iot_mqtt.c
 )
@@ -37,5 +37,6 @@ target_include_directories(app PRIVATE  src
                                         src/hmi
                                         # src/io_bubble
                                         src/thread_msg
+                                        src/led_rgb
                                         # src/iot
 )
