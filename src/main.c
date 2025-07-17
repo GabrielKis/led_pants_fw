@@ -23,6 +23,7 @@ LOG_MODULE_REGISTER(main);
 
 // #include <zephyr/kernel.h>
 #include <zephyr/drivers/led_strip.h>
+#include <zephyr/drivers/gpio.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/spi.h>
 #include <zephyr/sys/util.h>
@@ -49,9 +50,46 @@ static struct led_rgb pixels[STRIP_NUM_PIXELS];
 
 static const struct device *const strip = DEVICE_DT_GET(STRIP_NODE);
 
+////////////////////////
+
+// /* PWM device for servo control */
+// #define BUBBLE_THREAD_STACK_SIZE 1024
+// #define BUBBLE_THREAD_PRIORITY 7
+
+#if !DT_NODE_HAS_STATUS(DT_ALIAS(led0), okay)
+#error "LED0 GPIO node is not ready"
+#endif
+
+static const struct gpio_dt_spec bubble_io = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
+
+// Thread initialization
+// K_THREAD_STACK_DEFINE(bubble_thread_stack, BUBBLE_THREAD_STACK_SIZE);
+// struct k_thread bubble_thread_data;
+// k_tid_t bubble_thread_id;
+
+// -----------------------------------
+// Static functions
+// -----------------------------------
+static void init_io(void)
+{
+    if (!device_is_ready(bubble_io.port)) {
+        printk("Error: IO device %s is not ready\n", bubble_io.port->name);
+        return;
+    }
+
+    int ret = gpio_pin_configure_dt(&bubble_io, GPIO_OUTPUT_ACTIVE);
+    if (ret < 0) {
+        printk("Error %d: failed to configure LED pin\n", ret);
+    }
+
+    gpio_pin_set_dt(&bubble_io, 1);
+}
+
+
 int main(void)
 {
     printk("Zephyr Example Application %s\n", APP_VERSION_STRING);
+    init_io();
 
 	size_t color = 0;
 	int rc;
@@ -83,7 +121,7 @@ int main(void)
                     colors[color].b);
         }
 
-        k_sleep(K_MSEC(1000));  // Wait 1 second between color changes
+        k_sleep(K_MSEC(200));  // Wait 1 second between color changes
         color = (color + 1) % ARRAY_SIZE(colors);
     }
 
