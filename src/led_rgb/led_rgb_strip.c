@@ -35,9 +35,12 @@ LOG_MODULE_REGISTER(led_rgb_strip);
 #define RGB(_r, _g, _b) { .r = (_r), .g = (_g), .b = (_b) }
 
 static const struct led_rgb colors[] = {
+	RGB(0x00, 0x00, 0x00), /* NO COLLOR */
 	RGB(CONFIG_SAMPLE_LED_BRIGHTNESS, 0x00, 0x00), /* red */
-	RGB(0x00, CONFIG_SAMPLE_LED_BRIGHTNESS, 0x00), /* green */
-	RGB(0x00, 0x00, CONFIG_SAMPLE_LED_BRIGHTNESS), /* blue */
+	RGB(0x00, 0xff, 0x00), /* green */
+	RGB(0x00, 0x00, 0xff), /* blue */
+	RGB(0x00, 0x00, 0x7f), /* blue */
+	RGB(0x00, 0x00, 0x3f), /* blue */
 };
 
 static struct led_rgb pixels[STRIP_NUM_PIXELS];
@@ -46,6 +49,8 @@ static const struct device *const strip = DEVICE_DT_GET(STRIP_NODE);
  // Thread initialization
 #define LED_RGB_STRIP_THREAD_STACK_SIZE 2048 // Increase from 1024 to 2048
 #define LED_RGB_STRIP_THREAD_PRIORITY 7
+
+#define STRIP_MIDDLE_NUM_PIXELS (STRIP_NUM_PIXELS / 2)
 
 K_THREAD_STACK_DEFINE(led_rgb_strip_thread_stack, LED_RGB_STRIP_THREAD_STACK_SIZE);
 struct k_thread led_rgb_strip_thread_data;
@@ -59,6 +64,58 @@ void handle_main_msg(void)
 {
 }
 
+static void led_rgb_wave_effect_from_middle(void)
+{
+    static int wave_effect_initialized = 2;
+    static size_t wave_position_left, wave_position_right=0;
+    int rc;
+    static int aux=0;
+    static int cnt = 0;
+    if (!wave_effect_initialized) {
+        // Initialize wave effect parameters here if needed
+        if (cnt == 5) {
+            return;
+        }
+        wave_effect_initialized = true;
+        wave_position_left = STRIP_MIDDLE_NUM_PIXELS + 2; // Start from the middle of the strip
+        wave_position_right = STRIP_MIDDLE_NUM_PIXELS; // Start from the middle of the strip
+        cnt++;
+    }
+
+    for (size_t i = 0; i < STRIP_MIDDLE_NUM_PIXELS; i++) {
+        if (i == wave_position_left) {
+            pixels[i].r = 0x00; // Set the color for the wave effect
+            pixels[i].g = 0x00;
+            pixels[i].b = 0x01;
+        } else if (i == (wave_position_left - 1)) {
+            pixels[i].r = 0x00; // Set the color for the wave effect
+            pixels[i].g = 0x00;
+            pixels[i].b = 0x0f; // Slightly dimmer blue
+        } else if (i == (wave_position_left - 2)) {
+            pixels[i].r = 0x00; // Set the color for the wave effect
+            pixels[i].g = 0x00;
+            pixels[i].b = 0xff; // Even dimmer blue
+        } else {
+            pixels[i].r = 0x00; // Set to no color for other pixels
+            pixels[i].g = 0x00;
+            pixels[i].b = 0x00;
+        }
+    }
+
+    rc = led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
+    if (rc) {
+        LOG_ERR("couldn't update strip: %d", rc);
+    }
+
+    if (wave_position_left <= 0) {
+        // Reset wave effect parameters if needed
+        wave_effect_initialized = false;
+        return;
+    }
+
+    wave_position_left--;
+}
+
 static void led_rgb_strip_thread_entry(void *p1, void *p2, void *p3)
 {
 	if (device_is_ready(strip)) {
@@ -69,35 +126,13 @@ static void led_rgb_strip_thread_entry(void *p1, void *p2, void *p3)
 	}
 
 	LOG_INF("Displaying pattern on strip with %d pixels", STRIP_NUM_PIXELS);
-	size_t color = 0;
-	int rc;
-
 
     while (1) {
         handle_main_msg();
-        printk("LED RGB strip thread running\n");
+        led_rgb_wave_effect_from_middle(); // Call the wave effect function
 
-        // // Simple test - set all LEDs to the current color
-        for (size_t i = 0; i < STRIP_NUM_PIXELS; i++) {
-            pixels[i] = colors[color];
-        }
-
-        rc = led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
-        if (rc) {
-            LOG_ERR("couldn't update strip: %d", rc);
-        } else {
-            LOG_INF("Updated all %d LEDs with color %zu: R=%02x G=%02x B=%02x",
-                    STRIP_NUM_PIXELS,
-                    color,
-                    colors[color].r,
-                    colors[color].g,
-                    colors[color].b);
-        }
-
-        k_sleep(K_MSEC(50));  // Wait 1 second between color changes
-        color = (color + 1) % ARRAY_SIZE(colors);
-
-        k_msleep(1000);
+        k_usleep(12600);
+        //k_msleep(100);
     }
 
     return;
