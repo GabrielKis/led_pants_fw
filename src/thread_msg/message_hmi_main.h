@@ -5,18 +5,14 @@
 #include <zephyr/kernel.h>
 
 enum hmi_cmd_type {
-    HMI_CMD_BUBBLE_ON,
-    HMI_CMD_BUBBLE_OFF,
-};
-
-enum hmi_module_type {
-    MOD_MAIN,
-    MOD_BUBBLE
+    HMI_CMD_STOMP_INC,
+    HMI_CMD_ON_SIGNAL,
+    HMI_CMD_OFF_SIGNAL,
+    HMI_CMD_RST_STOMP,
 };
 
 // HMI -> Main Message
 struct hmi_msg_t {
-    uint8_t module; // enum hmi_module_type
     uint8_t type;   // enum hmi_cmd_type
 };
 

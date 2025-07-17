@@ -14,7 +14,7 @@
 
 #define RING_BUF_SIZE 64
 
-#define UART_CMD_ARRAY_SZ   3U
+#define UART_CMD_ARRAY_SZ   5U
 #define UART_ARRAY_SZ       20U
 
 // Thread initialization
@@ -34,20 +34,21 @@ struct UART_Command
     char *help_text;
 };
 
-static void uart_cmd_bubble_control(uint8_t *cmd, uint8_t sz);
+static void uart_cmd_hmi(uint8_t *cmd, uint8_t sz);
 static void uart_cmd_help_message(uint8_t *cmd, uint8_t sz);
 
 static struct UART_Command commands_list[UART_CMD_ARRAY_SZ] = {
-    {.size = 1, .header = {'1'}, .header_size = 1, .func = uart_cmd_bubble_control, .help_text = "1: Turn on Bubble\n"},
-    {.size = 1, .header = {'2'}, .header_size = 1, .func = uart_cmd_bubble_control, .help_text = "2: Turn off Bubble\n"},
+    {.size = 1, .header = {'1'}, .header_size = 1, .func = uart_cmd_hmi, .help_text = "1: Strain Gauge Stomp Increment +1\n"},
+    {.size = 1, .header = {'2'}, .header_size = 1, .func = uart_cmd_hmi, .help_text = "2: On Signal\n"},
+    {.size = 1, .header = {'3'}, .header_size = 1, .func = uart_cmd_hmi, .help_text = "3: Off Signal\n"},
+    {.size = 1, .header = {'4'}, .header_size = 1, .func = uart_cmd_hmi, .help_text = "4: Reset Stomp count\n"},
     {.size = 1, .header = {'0'}, .header_size = 1, .func = uart_cmd_help_message, .help_text = NULL},
 };
 
-static void uart_cmd_bubble_control(uint8_t *cmd, uint8_t sz)
+static void uart_cmd_hmi(uint8_t *cmd, uint8_t sz)
 {
     struct hmi_msg_t msg = {
-        .type = HMI_CMD_BUBBLE_ON,
-        .module = MOD_BUBBLE,
+        .type = HMI_CMD_OFF_SIGNAL,
     };
 
     if (cmd == NULL) {
@@ -56,9 +57,17 @@ static void uart_cmd_bubble_control(uint8_t *cmd, uint8_t sz)
     }
 
     if (cmd[0] == '1') {
-        msg.type = HMI_CMD_BUBBLE_ON;
+        printk("Received CMD: 1\n");
+        msg.type = HMI_CMD_STOMP_INC;
     } else if (cmd[0] == '2') {
-        msg.type = HMI_CMD_BUBBLE_OFF;
+        printk("Received CMD: 2\n");
+        msg.type = HMI_CMD_ON_SIGNAL;
+    } else if (cmd[0] == '3') {
+        printk("Received CMD: 3\n");
+        msg.type = HMI_CMD_OFF_SIGNAL;
+    } else if (cmd[0] == '4') {
+        printk("Received CMD: 4\n");
+        msg.type = HMI_CMD_RST_STOMP;
     } else {
         printk("Command unknown\n");
         return;

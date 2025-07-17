@@ -26,7 +26,7 @@
 		i2c-0 = &i2c0;
 		led-strip = &led_strip;
 		watchdog0 = &wdt0;
-		led0 = &led0;
+		// led0 = &led0;
 	};
 
 	chosen {
@@ -43,13 +43,13 @@
 		sw0 = &button0;
 	};
 
-	leds {
-		compatible = "gpio-leds";
-		led0: led_0 {
-			gpios = <&gpio0 39 GPIO_ACTIVE_HIGH>;
-			label = "LED 0";
-		};
-	};
+	// leds {
+	// 	compatible = "gpio-leds";
+	// 	led0: led_0 {
+	// 		gpios = <&gpio0 39 GPIO_ACTIVE_HIGH>;
+	// 		label = "LED 0";
+	// 	};
+	// };
 
 	buttons {
 		compatible = "gpio-keys";
@@ -155,7 +155,8 @@
 
 &i2s0_default {
 	group1 {
-		pinmux = <I2S0_O_SD_GPIO38>;
+		//pinmux = <I2S0_O_SD_GPIO38>;
+		pinmux = <I2S0_O_SD_GPIO48>;
 		output-enable;
 	};
 };
