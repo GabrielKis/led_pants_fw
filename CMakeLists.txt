@@ -26,7 +26,7 @@ target_sources(app PRIVATE
                 src/main.c
                 src/thread_msg/message_hmi_main.c
                 # src/thread_msg/message_iot_main.c
-                # src/thread_msg/message_main_bubble.c
+                src/thread_msg/message_main_ledrgb.c
                 src/hmi/uart_cmd.c
                 src/led_rgb/led_rgb_strip.c
                 # src/iot/iot_thread.c

@@ -6,21 +6,14 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/led_strip.h>
-// #include <zephyr/device.h>
-// #include <zephyr/drivers/spi.h>
-// #include <zephyr/sys/util.h>
 
 #include <errno.h>
 #include <string.h>
 
+#include "message_main_ledrgb.h"
+
 #define LOG_LEVEL 4
 LOG_MODULE_REGISTER(led_rgb_strip);
-
-// #include <zephyr/kernel.h>
-
-// #include "uart_cmd.h"
-// #include "message_hmi_main.h"
-
 
 #define STRIP_NODE		DT_ALIAS(led_strip)
 
@@ -56,31 +49,59 @@ K_THREAD_STACK_DEFINE(led_rgb_strip_thread_stack, LED_RGB_STRIP_THREAD_STACK_SIZ
 struct k_thread led_rgb_strip_thread_data;
 k_tid_t led_rgb_strip_thread_id;
 
+static bool stomp_effect = false; // Global variable to track stomp effect state
+
 // -----------------------------------
 // Static functions
 // -----------------------------------
 
 void handle_main_msg(void)
 {
+    struct main_to_ledrgb_msg_t msg;
+    int ret;
+    
+    // Non-blocking message receive
+    ret = recv_message_main_to_ledrgb(&msg);
+
+    if (ret == 0) {
+        // Message received successfully
+        LOG_INF("Received LED RGB message: type %d", msg.type);
+        
+        switch (msg.type) {
+            case MAIN_CMD_LEDRGB_STOMP:
+                LOG_INF("STOMP effect activated");
+                stomp_effect = true; // Set stomp effect to true
+                return; // Execute wave effect
+                
+            case MAIN_CMD_LEDRGB_DEFAULT:
+                LOG_INF("DEFAULT effect activated");
+                return; // Execute wave effect
+                
+            default:
+                LOG_WRN("Unknown LED RGB command: %d", msg.type);
+                return;
+        }
+    }
+    
+    // No message received (ret != 0), do nothing
+    return;
 }
 
 static void led_rgb_wave_effect_from_middle(void)
 {
-    static int wave_effect_initialized = 2;
-    static size_t wave_position_left, wave_position_right=0;
-    int rc;
-    static int aux=0;
-    static int cnt = 0;
-    if (!wave_effect_initialized) {
-        // Initialize wave effect parameters here if needed
-        if (cnt == 5) {
-            return;
-        }
-        wave_effect_initialized = true;
-        wave_position_left = STRIP_MIDDLE_NUM_PIXELS + 2; // Start from the middle of the strip
-        wave_position_right = STRIP_MIDDLE_NUM_PIXELS; // Start from the middle of the strip
-        cnt++;
+    if (!stomp_effect) {
+        return; // Skip effect if stomp effect is not active
     }
+    // static int wave_effect_initialized = false;
+    static size_t wave_position_left = STRIP_MIDDLE_NUM_PIXELS + 2;
+    static size_t wave_position_right = STRIP_MIDDLE_NUM_PIXELS;
+    int rc;
+    LOG_INF("Executing wave effect from middle: %u", wave_position_left);
+    // if (!wave_effect_initialized) {
+    //     wave_effect_initialized = true;
+    //     wave_position_left = STRIP_MIDDLE_NUM_PIXELS + 2; // Start from the middle of the strip
+    //     wave_position_right = STRIP_MIDDLE_NUM_PIXELS; // Start from the middle of the strip
+    // }
 
     for (size_t i = 0; i < STRIP_MIDDLE_NUM_PIXELS; i++) {
         if (i == wave_position_left) {
@@ -109,7 +130,10 @@ static void led_rgb_wave_effect_from_middle(void)
 
     if (wave_position_left <= 0) {
         // Reset wave effect parameters if needed
-        wave_effect_initialized = false;
+        // wave_effect_initialized = false;
+        stomp_effect = false; // Reset stomp effect after wave effect completes
+        wave_position_left = STRIP_MIDDLE_NUM_PIXELS + 2;
+        wave_position_right = STRIP_MIDDLE_NUM_PIXELS;
         return;
     }
 
@@ -129,7 +153,8 @@ static void led_rgb_strip_thread_entry(void *p1, void *p2, void *p3)
 
     while (1) {
         handle_main_msg();
-        led_rgb_wave_effect_from_middle(); // Call the wave effect function
+
+        led_rgb_wave_effect_from_middle(); // Only call when message is received
 
         k_usleep(12600);
         //k_msleep(100);
