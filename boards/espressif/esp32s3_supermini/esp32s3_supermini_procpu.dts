@@ -26,6 +26,7 @@
 		i2c-0 = &i2c0;
 		led-strip = &led_strip;
 		watchdog0 = &wdt0;
+		adc0 = &adc0;
 		// led0 = &led0;
 	};
 
@@ -41,6 +42,10 @@
 	aliases {
 		uart-0 = &uart0;
 		sw0 = &button0;
+	};
+
+	zephyr,user {
+		io-channels = <&adc0 0>;
 	};
 
 	// leds {
@@ -181,6 +186,20 @@ i2s_led: &i2s0 {
 
 &dma {
 	status = "okay";
+};
+
+&adc0 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@0 {
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1_4";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+	};
 };
 
 // &wdt0 {
