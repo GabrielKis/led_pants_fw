@@ -29,12 +29,15 @@ LOG_MODULE_REGISTER(led_rgb_strip);
 
 static const struct led_rgb colors[] = {
 	RGB(0x00, 0x00, 0x00), /* NO COLLOR */
-	RGB(CONFIG_SAMPLE_LED_BRIGHTNESS, 0x00, 0x00), /* red */
-	RGB(0x00, 0xff, 0x00), /* green */
-	RGB(0x00, 0x00, 0xff), /* blue */
-	RGB(0x00, 0x00, 0x7f), /* blue */
-	RGB(0x00, 0x00, 0x3f), /* blue */
+	RGB(0x00, 0x00, 0xff), /* blue_100 */
+	RGB(0x00, 0x00, 0x0f), /* blue_50 */
+	RGB(0x00, 0x00, 0x01), /* blue_25 */
 };
+
+#define LED_RGB_NO_COLOR_ID 0U
+#define LED_RGB_BLUE_100_ID 1U
+#define LED_RGB_BLUE_50_ID  2U
+#define LED_RGB_BLUE_25_ID  3U
 
 static struct led_rgb pixels[STRIP_NUM_PIXELS];
 static const struct device *const strip = DEVICE_DT_GET(STRIP_NODE);
@@ -66,7 +69,7 @@ void handle_main_msg(void)
     if (ret == 0) {
         // Message received successfully
         LOG_INF("Received LED RGB message: type %d", msg.type);
-        
+
         switch (msg.type) {
             case MAIN_CMD_LEDRGB_STOMP:
                 LOG_INF("STOMP effect activated");
@@ -94,32 +97,22 @@ static void led_rgb_wave_effect_from_middle(void)
     }
     // static int wave_effect_initialized = false;
     static size_t wave_position_left = STRIP_MIDDLE_NUM_PIXELS + 2;
-    static size_t wave_position_right = STRIP_MIDDLE_NUM_PIXELS;
     int rc;
     LOG_INF("Executing wave effect from middle: %u", wave_position_left);
-    // if (!wave_effect_initialized) {
-    //     wave_effect_initialized = true;
-    //     wave_position_left = STRIP_MIDDLE_NUM_PIXELS + 2; // Start from the middle of the strip
-    //     wave_position_right = STRIP_MIDDLE_NUM_PIXELS; // Start from the middle of the strip
-    // }
 
     for (size_t i = 0; i < STRIP_MIDDLE_NUM_PIXELS; i++) {
-        if (i == wave_position_left) {
-            pixels[i].r = 0x00; // Set the color for the wave effect
-            pixels[i].g = 0x00;
-            pixels[i].b = 0x01;
+        if (i == wave_position_left && (i!=0)) {
+            memcpy(&pixels[i], &colors[LED_RGB_BLUE_25_ID], sizeof(struct led_rgb));
+            memcpy(&pixels[29-i], &colors[LED_RGB_BLUE_25_ID], sizeof(struct led_rgb));
         } else if (i == (wave_position_left - 1)) {
-            pixels[i].r = 0x00; // Set the color for the wave effect
-            pixels[i].g = 0x00;
-            pixels[i].b = 0x0f; // Slightly dimmer blue
+            memcpy(&pixels[i], &colors[LED_RGB_BLUE_50_ID], sizeof(struct led_rgb));
+            memcpy(&pixels[29-i], &colors[LED_RGB_BLUE_50_ID], sizeof(struct led_rgb));
         } else if (i == (wave_position_left - 2)) {
-            pixels[i].r = 0x00; // Set the color for the wave effect
-            pixels[i].g = 0x00;
-            pixels[i].b = 0xff; // Even dimmer blue
+            memcpy(&pixels[i], &colors[LED_RGB_BLUE_100_ID], sizeof(struct led_rgb));
+            memcpy(&pixels[29-i], &colors[LED_RGB_BLUE_100_ID], sizeof(struct led_rgb));
         } else {
-            pixels[i].r = 0x00; // Set to no color for other pixels
-            pixels[i].g = 0x00;
-            pixels[i].b = 0x00;
+            memcpy(&pixels[i], &colors[LED_RGB_NO_COLOR_ID], sizeof(struct led_rgb));
+            memcpy(&pixels[29-i], &colors[LED_RGB_NO_COLOR_ID], sizeof(struct led_rgb));
         }
     }
 
@@ -129,11 +122,8 @@ static void led_rgb_wave_effect_from_middle(void)
     }
 
     if (wave_position_left <= 0) {
-        // Reset wave effect parameters if needed
-        // wave_effect_initialized = false;
         stomp_effect = false; // Reset stomp effect after wave effect completes
         wave_position_left = STRIP_MIDDLE_NUM_PIXELS + 2;
-        wave_position_right = STRIP_MIDDLE_NUM_PIXELS;
         return;
     }
 
@@ -157,6 +147,7 @@ static void led_rgb_strip_thread_entry(void *p1, void *p2, void *p3)
         led_rgb_wave_effect_from_middle(); // Only call when message is received
 
         k_usleep(12600);
+        // k_usleep(30000);
         //k_msleep(100);
     }
 

@@ -6,14 +6,6 @@
 #include <zephyr/kernel.h>
 #include <app_version.h>
 
-/*
- * Copyright (c) 2017 Linaro Limited
- * Copyright (c) 2018 Intel Corporation
- * Copyright (c) 2024 TOKITA Hiroshi
- *
- * SPDX-License-Identifier: Apache-2.0
- */
-
 #include <errno.h>
 #include <string.h>
 
@@ -59,9 +51,9 @@ void handle_hmi_msg(void)
 void send_msg_main_led_rgb(void)
 {
     // only send message if stomp effect is received
-    if (stomp_signal == false) {
-        return;
-    }
+    // if (stomp_signal == false) {
+    //     return;
+    // }
 
     struct main_to_ledrgb_msg_t msg = {
         .type = MAIN_CMD_LEDRGB_STOMP,
@@ -85,10 +77,12 @@ int main(void)
         handle_hmi_msg();
 
         // Send message to the LED RGB Thread
-        send_msg_main_led_rgb();
+        if (stomp_signal) {
+            send_msg_main_led_rgb();
+        }
 
-        printk("Main Thread Running\n");
-        k_msleep(1000);
+        //printk("Main Thread Running\n");
+        k_msleep(50);
     }
 
     return 0;

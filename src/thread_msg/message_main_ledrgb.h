@@ -1,5 +1,5 @@
-#ifndef MSG_MAIN_BUBBLE_H_
-#define MSG_MAIN_BUBBLE_H_
+#ifndef MSG_MAIN_LEDRGB_H_
+#define MSG_MAIN_LEDRGB_H_
 
 #include <stdint.h>
 #include <zephyr/kernel.h>
